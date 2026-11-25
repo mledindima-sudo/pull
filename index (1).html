@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Лучшее на WB</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg:var(--tg-theme-bg-color,#fff);
+  --text:var(--tg-theme-text-color,#1a1a1a);
+  --hint:var(--tg-theme-hint-color,#7a7a85);
+  --card:var(--tg-theme-secondary-bg-color,#f2f2f6);
+  --accent:var(--tg-theme-button-color,#8b2fc9);
+  --accent-text:var(--tg-theme-button-text-color,#fff);
+}
+*{box-sizing:border-box;margin:0}
+body{font:16px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding:12px 12px calc(20px + env(safe-area-inset-bottom))}
+.tabs{display:flex;gap:6px;background:var(--card);padding:4px;border-radius:12px;position:sticky;top:8px;z-index:2}
+.tabs button{flex:1;border:0;background:none;color:var(--text);font:inherit;font-weight:600;padding:10px;border-radius:9px;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--accent);color:var(--accent-text)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sort{display:flex;justify-content:flex-end;margin:10px 2px 2px}
+.sort select{font:inherit;font-size:14px;color:var(--hint);background:none;border:0}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:8px}
+.card{background:var(--card);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;color:inherit;text-decoration:none}
+.card img{width:100%;aspect-ratio:3/4;object-fit:cover;background:#ddd}
+.body{padding:10px;display:flex;flex-direction:column;gap:4px;flex:1}
+.price{font-weight:700;font-size:18px}
+.title{font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.note{font-size:13px;color:var(--hint)}
+.btn{margin-top:auto;padding-top:6px}
+.btn span{display:block;text-align:center;background:var(--accent);color:var(--accent-text);border-radius:9px;padding:8px;font-size:14px;font-weight:600}
+.empty{grid-column:1/-1;text-align:center;color:var(--hint);padding:40px 0}
+@media(min-width:600px){.grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="tabs" role="tablist">
+  <button role="tab" data-cat="15-30" aria-selected="true">15–30 тыс. ₽</button>
+  <button role="tab" data-cat="30-50" aria-selected="false">30–50 тыс. ₽</button>
+</div>
+<div class="sort">
+  <select id="sort" aria-label="Сортировка">
+    <option value="new">Сначала новые</option>
+    <option value="asc">Сначала дешевле</option>
+    <option value="desc">Сначала дороже</option>
+  </select>
+</div>
+<div class="grid" id="grid"></div>
+
+<script>
+const tg = window.Telegram && Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+let products = [], cat = "15-30", sort = "new";
+const grid = document.getElementById("grid");
+const fmt = n => n.toLocaleString("ru-RU") + " ₽";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function render(){
+  let list = products.map((p,i)=>({...p,i})).filter(p=>p.category===cat);
+  if (sort==="asc") list.sort((a,b)=>a.price-b.price);
+  else if (sort==="desc") list.sort((a,b)=>b.price-a.price);
+  else list.sort((a,b)=>b.i-a.i); // новые = добавленные позже, выше
+  if (!list.length){ grid.innerHTML='<p class="empty">В этой категории пока ничего нет</p>'; return; }
+  grid.innerHTML = list.map(p=>`
+    <a class="card" href="${esc(p.url)}" data-url="${esc(p.url)}">
+      <img src="${esc(p.image)}" alt="" loading="lazy">
+      <div class="body">
+        <div class="price">${fmt(p.price)}</div>
+        <div class="title">${esc(p.title)}</div>
+        ${p.note?`<div class="note">${esc(p.note)}</div>`:""}
+        <div class="btn"><span>Открыть на WB</span></div>
+      </div>
+    </a>`).join("");
+}
+
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+  cat=b.dataset.cat;
+  document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",x===b));
+  render();
+}));
+document.getElementById("sort").addEventListener("change",e=>{sort=e.target.value;render();});
+
+grid.addEventListener("click",e=>{
+  const a=e.target.closest(".card"); if(!a) return;
+  if (tg){ e.preventDefault(); tg.openLink(a.dataset.url); }
+});
+
+fetch("products.json?"+Date.now())
+  .then(r=>r.json()).then(d=>{products=d;render();})
+  .catch(()=>{grid.innerHTML='<p class="empty">Не удалось загрузить products.json</p>';});
+</script>
+</body>
+</html>
