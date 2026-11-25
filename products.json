@@ -1,18 +1,1 @@
-[
-  {
-    "title": "Название товара 1",
-    "price": 19990,
-    "category": "15-30",
-    "image": "https://example.com/photo1.jpg",
-    "url": "https://www.wildberries.ru/catalog/000000/detail.aspx",
-    "note": "Короткий комментарий: почему стоит брать"
-  },
-  {
-    "title": "Название товара 2",
-    "price": 38500,
-    "category": "30-50",
-    "image": "https://example.com/photo2.jpg",
-    "url": "https://www.wildberries.ru/catalog/000001/detail.aspx",
-    "note": "Короткий комментарий: почему стоит брать"
-  }
-]
+
